@@ -1,27 +1,18 @@
 import express from 'express'
+import { calc } from './calc.js'
+
 const app = express()
 
+const IP_LOCAL = 'localhost'
 const PORT = 7777
-const IP_LOCAL = '127.0.0.1'
 
-const timer = (req, res, next) => {
-    const date = new Date()
-    req.requestDate = date.toUTCString()
-    next()
+const sendMessage = (req, res) => {
+    res.send(req.message)
 }
 
-app.use(timer)
-
-app.get('/', (req, res) => {
-    res.send(`Exercices express partie 2`)
-})
-app.get('/get_current_time', (req, res) => {
-    let time = req.requestDate
-    res.send(`Date du jour ${req.requestDate}`)
-})
-app.get('/how_pass_data', (req, res) => {
-    res.send(`<!DOCTYPE html>
-
+const wrapWithHtml = (req, res, next) => {
+    const html = `
+<!DOCTYPE html>
     <html lang="en">
       <head>
         <meta charset="utf-8" />
@@ -29,13 +20,37 @@ app.get('/how_pass_data', (req, res) => {
       </head>
     
       <body>
-        <p>Nos handlers agissent ainsi comme un middleware (notion que l'on verra plus tard). \nLe principe est d'effectuer des traitements entre l'arrivée de la requête et l'envoi de notre réponse. \nLes route handlers sont exécutés dans l'ordre dans lequel ils sont déclarés, \nils prennent un paramètre supplémentaires qui est next et doivent appeller next() \npour passer à l'handler suivant lorsque le traitement est terminé.
-        </p>
+        <p>${req.message}</p>
       </body>
-    </html> 
-    `)
+    </html>
+`
+    req.message = html
+    next()
+}
+
+app.get('/', (req, res, next) => {
+    req.message = `Exercices express partie 2`
+    next()
 })
 
+app.get('/get_current_time', (req, res, next) => {
+    const date = new Date().toUTCString()
+    req.message = date
+    next()
+})
+
+app.get('/how_pass_data', (req, res, next) => {
+    const msg =
+        'On peut passer des données entre les middleware grâce aux obj req, res'
+    req.message = msg
+    next()
+})
+
+app.use('/calc', calc)
+
+app.use(wrapWithHtml)
+app.use(sendMessage)
+// start the server
 app.listen(PORT, IP_LOCAL, () => {
-    console.log(`Example app listening at http://${IP_LOCAL}:${PORT}`)
+    console.log(`listening at ${IP_LOCAL}:${PORT}`)
 })
